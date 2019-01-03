@@ -11,11 +11,7 @@
 import Cocoa
 import AVFoundation
 
-@NSApplicationMain
-class AppDelegate: NSObject, NSApplicationDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
-
-    @IBOutlet weak var window: NSWindow!
-
+class CameraInput: NSObject {
     lazy var sampleBufferDelegateQueue = DispatchQueue(label: "CVCameraInput")
     lazy var captureSession: AVCaptureSession = {
         let session = AVCaptureSession()
@@ -38,15 +34,43 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVCaptureVideoDataOutputSamp
         
         return session
     }()
+}
 
+extension CameraInput/*: CVInput*/ {
+    func start() {
+        guard !self.captureSession.isRunning else {
+            return
+        }
+        
+        self.captureSession.startRunning()
+    }
+    
+    func stop() {
+        guard self.captureSession.isRunning else {
+            return
+        }
+        
+        self.captureSession.stopRunning()
+    }
+}
+
+extension CameraInput: AVCaptureVideoDataOutputSampleBufferDelegate {
+    // private breaks this!
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // Process captured CMSampleBuffer
+        // Handle captured frame
         NSLog("didOutput \(sampleBuffer)")
     }
+}
+@NSApplicationMain
+class AppDelegate: NSObject, NSApplicationDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
+
+    @IBOutlet weak var window: NSWindow!
+    lazy var cameraInput = CameraInput()
+
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
-        self.captureSession.startRunning()
+        self.cameraInput.start()
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
